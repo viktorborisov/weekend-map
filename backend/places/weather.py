@@ -1,5 +1,6 @@
 import requests
 from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from django.core.cache import cache
 
 WTTR_URL = "https://wttr.in"
@@ -98,7 +99,7 @@ def fetch_weather_for_place(lat, lon):
         resp = requests.get(
             f'{WTTR_URL}/{lat},{lon}',
             params={'format': 'j1'},
-            timeout=20,
+            timeout=10,
             headers={'User-Agent': 'curl/7.0'},
         )
         resp.raise_for_status()
@@ -270,10 +271,18 @@ def get_recommendations():
     from .models import CachedPlace
 
     station_weather = {}
-    for s_lat, s_lon in WEATHER_STATIONS:
-        w = fetch_weather_for_place(s_lat, s_lon)
-        if w:
-            station_weather[(s_lat, s_lon)] = w
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {
+            executor.submit(fetch_weather_for_place, s_lat, s_lon): (s_lat, s_lon)
+            for s_lat, s_lon in WEATHER_STATIONS
+        }
+        for future in as_completed(futures, timeout=15):
+            try:
+                w = future.result(timeout=15)
+                if w:
+                    station_weather[futures[future]] = w
+            except Exception:
+                pass
 
     if not station_weather:
         return []
