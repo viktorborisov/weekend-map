@@ -15,7 +15,8 @@ export function useWeather(places) {
       const recs = await fetchAllWeather(places)
       setRecommendations(recs)
     } catch (e) {
-      setError('Не удалось загрузить прогноз погоды')
+      const msg = e.response?.data?.error || 'Сервис погоды временно недоступен. Попробуйте позже.'
+      setError(msg)
     } finally {
       setLoading(false)
     }

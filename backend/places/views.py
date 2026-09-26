@@ -10,11 +10,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .services import refresh_places, get_places
 from .serializers import PlaceSerializer
 from .models import CachedPlace, VisitedPlace
+from .weather import fetch_weather_for_place, get_recommendations
 
 
 _refresh_lock = threading.Lock()
 _refresh_running = {'active': False}
-
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -135,3 +135,13 @@ def toggle_visited(request):
     else:
         VisitedPlace.objects.create(user=request.user, place=place)
         return Response({'visited': True, 'osm_id': osm_id})
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def weather_recommendations(request):
+    try:
+        recs = get_recommendations()
+        return Response({'recommendations': recs})
+    except Exception as e:
+        return Response({'error': f'Ошибка получения погоды: {e}'}, status=500)

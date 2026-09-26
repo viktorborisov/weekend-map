@@ -2,58 +2,38 @@ import requests
 from datetime import datetime, timedelta
 from django.core.cache import cache
 
-# Use nginx proxy to reach wttr.in (containers can't access external HTTPS directly)
-WTTR_URL = "http://frontend/wttr"
+OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 
-WEATHER_CODES = {
-    113: ('☀️', 'Ясно'),
-    116: ('⛅', 'Переменная облачность'),
-    119: ('☁️', 'Пасмурно'),
-    122: ('☁️', 'Сильная облачность'),
-    143: ('🌫️', 'Туман'),
-    176: ('🌦️', 'Морось'),
-    179: ('🌨️', 'Снег с дождём'),
-    182: ('🌨️', 'Снег с дождём'),
-    185: ('🌨️', 'Снег с дождём'),
-    200: ['⛈️', 'Гроза'],
-    227: ('🌨️', 'Снег'),
-    230: ('❄️', 'Сильный снег'),
-    248: ('🌫️', 'Туман'),
-    260: ('🌫️', 'Изморозь'),
-    263: ('🌦️', 'Морось'),
-    266: ('🌦️', 'Морось'),
-    281: ('🌧️', 'Дождь'),
-    284: ('🌧️', 'Сильный дождь'),
-    293: ('🌧️', 'Небольшой дождь'),
-    296: ('🌧️', 'Небольшой дождь'),
-    299: ('🌧️', 'Дождь'),
-    302: ('🌧️', 'Дождь'),
-    305: ('🌧️', 'Сильный дождь'),
-    308: ('🌧️', 'Сильный дождь'),
-    311: ('🌧️', 'Ливень'),
-    314: ('🌧️', 'Ливень'),
-    317: ('🌨️', 'Снег с дождём'),
-    320: ('🌨️', 'Снег'),
-    323: ('🌨️', 'Небольшой снег'),
-    326: ('🌨️', 'Небольшой снег'),
-    329: ('❄️', 'Сильный снег'),
-    332: ('❄️', 'Сильный снег'),
-    335: ('❄️', 'Сильный снег'),
-    338: ('❄️', 'Снег'),
-    350: ('🌧️', 'Ливень'),
-    353: ('🌧️', 'Небольшой дождь'),
-    356: ('🌧️', 'Ливень'),
-    359: ('🌧️', 'Сильный ливень'),
-    362: ('🌨️', 'Снег с дождём'),
-    365: ('🌨️', 'Снег с дождём'),
-    368: ('🌨️', 'Небольшой снег'),
-    371: ('❄️', 'Сильный снег'),
-    374: ('🌨️', 'Снег с дождём'),
-    377: ('🌨️', 'Снег с дождём'),
-    386: ('⛈️', 'Гроза с дождём'),
-    389: ('⛈️', 'Гроза с градом'),
-    392: ('⛈️', 'Гроза со снегом'),
-    395: ('❄️', 'Сильный снег'),
+# Open-Meteo WMO weather codes
+WMO_CODES = {
+    0: ('☀️', 'Ясно'),
+    1: ('🌤️', 'Преимущественно ясно'),
+    2: ('⛅', 'Переменная облачность'),
+    3: ('☁️', 'Пасмурно'),
+    45: ('🌫️', 'Туман'),
+    48: ('🌫️', 'Изморозь'),
+    51: ('🌦️', 'Морось'),
+    53: ('🌦️', 'Морось'),
+    55: ('🌦️', 'Сильная морось'),
+    56: ('🌧️', 'Ледяная морось'),
+    57: ('🌧️', 'Сильная ледяная морось'),
+    61: ('🌧️', 'Небольшой дождь'),
+    63: ('🌧️', 'Дождь'),
+    65: ('🌧️', 'Сильный дождь'),
+    66: ('🌧️', 'Ледяной дождь'),
+    67: ('🌧️', 'Сильный ледяной дождь'),
+    71: ('🌨️', 'Небольшой снег'),
+    73: ('🌨️', 'Снег'),
+    75: ('❄️', 'Сильный снег'),
+    77: ('🌨️', 'Снежная крупа'),
+    80: ('🌧️', 'Небольшой ливень'),
+    81: ('🌧️', 'Ливень'),
+    82: ('🌧️', 'Сильный ливень'),
+    85: ('🌨️', 'Небольшой снегопад'),
+    86: ('❄️', 'Сильный снегопад'),
+    95: ('⛈️', 'Гроза'),
+    96: ('⛈️', 'Гроза с градом'),
+    99: ('⛈️', 'Сильная гроза с градом'),
 }
 
 WIND_DIRECTIONS = ['С', 'СВ', 'В', 'ЮВ', 'Ю', 'ЮЗ', 'З', 'СЗ']
@@ -65,9 +45,9 @@ def _wind_dir(deg):
     return WIND_DIRECTIONS[int((int(deg) + 22.5) / 45) % 8]
 
 
-def _parse_wttr_code(code):
-    code = int(code) if code else 0
-    return WEATHER_CODES.get(code, ('❓', 'Неизвестно'))
+def _parse_wmo_code(code):
+    code = int(code) if code is not None else 0
+    return WMO_CODES.get(code, ('❓', 'Неизвестно'))
 
 
 def get_weekend_dates():
@@ -97,72 +77,47 @@ def fetch_weather_for_place(lat, lon):
 
     try:
         resp = requests.get(
-            f'{WTTR_URL}/{lat},{lon}',
-            params={'format': 'j1'},
-            timeout=15,
-            headers={'User-Agent': 'curl/7.0'},
+            OPEN_METEO_URL,
+            params={
+                'latitude': lat,
+                'longitude': lon,
+                'daily': 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,wind_direction_10m_dominant',
+                'timezone': 'Europe/Moscow',
+                'forecast_days': 7,
+            },
+            timeout=10,
         )
         resp.raise_for_status()
         data = resp.json()
     except Exception:
         return None
 
-    weather_data = data.get('weather', [])
+    daily = data.get('daily', {})
+    dates = daily.get('time', [])
+    codes = daily.get('weather_code', [])
+    t_max = daily.get('temperature_2m_max', [])
+    t_min = daily.get('temperature_2m_min', [])
+    precip = daily.get('precipitation_sum', [])
+    wind_max = daily.get('wind_speed_10m_max', [])
+    wind_dir = daily.get('wind_direction_10m_dominant', [])
 
     sat_weather = None
     sun_weather = None
 
-    for day in weather_data:
-        d = day.get('date')
-        if not d:
-            continue
-
-        hourly = day.get('hourly', [])
-
-        # Find max/min temp from hourly
-        temps = [int(h.get('tempC', 0)) for h in hourly if h.get('tempC')]
-        temp_max = max(temps) if temps else None
-        temp_min = min(temps) if temps else None
-
-        # Find max wind speed
-        winds = [float(h.get('windspeedKmph', 0)) for h in hourly if h.get('windspeedKmph')]
-        wind_max = max(winds) if winds else 0
-
-        # Wind direction from midday
-        wind_dir_val = None
-        for h in hourly:
-            if h.get('time') == '1200':
-                wind_dir_val = h.get('winddirDegree')
-                break
-        if not wind_dir_val and hourly:
-            wind_dir_val = hourly[len(hourly)//2].get('winddirDegree')
-
-        # Precipitation
-        precip_mm = float(day.get('totalSnow_cm', 0) or 0) * 10  # cm to mm
-        for h in hourly:
-            precip_mm += float(h.get('precipMM', 0) or 0)
-
-        # Weather code — use midday code
-        code_val = 0
-        for h in hourly:
-            if h.get('time') == '1200':
-                code_val = int(h.get('weatherCode', 0) or 0)
-                break
-        if not code_val and hourly:
-            code_val = int(hourly[len(hourly)//2].get('weatherCode', 0) or 0)
-
-        emoji, desc = _parse_wttr_code(code_val)
+    for i, d in enumerate(dates):
+        code_val = codes[i] if i < len(codes) else 0
+        emoji, desc = _parse_wmo_code(code_val)
 
         info = {
             'date': d,
             'emoji': emoji,
             'desc': desc,
-            'code': code_val,
-            'temp_max': temp_max,
-            'temp_min': temp_min,
-            'precip': round(precip_mm, 1),
-            'wind': round(wind_max * 0.28, 1),  # km/h to m/s
-            'wind_dir': _wind_dir(wind_dir_val),
+            'code': int(code_val),
+            'temp_max': int(t_max[i]) if i < len(t_max) and t_max[i] is not None else None,
+            'temp_min': int(t_min[i]) if i < len(t_min) and t_min[i] is not None else None,
+            'precip': round(float(precip[i] or 0), 1) if i < len(precip) else 0,
+            'wind': round(float(wind_max[i] or 0), 1) if i < len(wind_max) else 0,
+            'wind_dir': _wind_dir(wind_dir[i] if i < len(wind_dir) else None),
         }
 
         if d == sat_str:
@@ -185,27 +140,31 @@ def _score_weather(w):
     score = 100
     code = w.get('code', 0)
 
-    if code == 113:
+    if code == 0:
         score += 30
-    elif code == 116:
+    elif code in (1, 2):
         score += 20
-    elif code in (119, 122):
+    elif code == 3:
         score += 5
-    elif code in (143, 248, 260):
+    elif code in (45, 48):
         score -= 15
-    elif code in (176, 263, 266):
+    elif code in (51, 53):
         score -= 25
-    elif code in (293, 296, 353):
-        score -= 30
-    elif code in (299, 302, 281):
-        score -= 40
-    elif code in (305, 308, 284, 356):
-        score -= 60
-    elif code in (323, 326, 368):
-        score -= 20
-    elif code in (329, 332, 335, 371, 230):
+    elif code in (55, 56, 57):
         score -= 35
-    elif code in (200, 386, 389, 392, 395):
+    elif code in (61, 80):
+        score -= 30
+    elif code in (63, 81):
+        score -= 40
+    elif code in (65, 66, 67, 82):
+        score -= 60
+    elif code in (71, 73, 85):
+        score -= 20
+    elif code in (75, 86):
+        score -= 35
+    elif code in (77,):
+        score -= 20
+    elif code in (95, 96, 99):
         score -= 70
 
     precip = w.get('precip', 0)
@@ -230,7 +189,9 @@ def _score_weather(w):
     return max(0, min(100, score))
 
 
-def _recommend_text(score):
+def _recommend_text(score, weather):
+    if not weather:
+        return 'Нет данных'
     if score >= 80:
         return 'Отличная погода — обязательно посетите!'
     elif score >= 60:
@@ -243,15 +204,55 @@ def _recommend_text(score):
         return 'Плохая погода, лучше не ехать'
 
 
+# Reference weather stations — one request per station covers nearby places
+WEATHER_STATIONS = [
+    (59.95, 31.03),   # SPb
+    (59.57, 30.11),   # SW
+    (59.71, 29.03),   # W
+    (59.99, 32.30),   # E
+    (60.72, 28.73),   # NW (Vyborg)
+    (61.03, 30.12),   # N (Priozersk)
+    (60.26, 29.61),   # NW mid
+    (60.78, 33.54),   # NE (Lodeynoye Pole)
+    (58.74, 29.85),   # SW (Gdov)
+    (59.47, 33.85),   # SE (Tikhvin)
+    (59.37, 28.21),   # SW far (Kingisepp)
+    (60.92, 34.19),   # NE far (Svir)
+]
+
+_station_cache = {}
+
+
+def _nearest_station(lat, lon):
+    best = WEATHER_STATIONS[0]
+    best_dist = float('inf')
+    for s_lat, s_lon in WEATHER_STATIONS:
+        d = (s_lat - lat) ** 2 + (s_lon - lon) ** 2
+        if d < best_dist:
+            best_dist = d
+            best = (s_lat, s_lon)
+    return best
+
+
 def get_recommendations():
     from .models import CachedPlace
 
-    sat, sun = get_weekend_dates()
+    # Fetch weather for all stations
+    station_weather = {}
+    for s_lat, s_lon in WEATHER_STATIONS:
+        w = fetch_weather_for_place(s_lat, s_lon)
+        if w:
+            station_weather[(s_lat, s_lon)] = w
+
+    if not station_weather:
+        return []
+
     places = CachedPlace.objects.all().order_by('name')
 
     results = []
     for place in places:
-        weather = fetch_weather_for_place(place.lat, place.lon)
+        st = _nearest_station(place.lat, place.lon)
+        weather = station_weather.get(st)
         if not weather:
             continue
 
@@ -260,7 +261,7 @@ def get_recommendations():
 
         best_day = 'saturday' if sat_score >= sun_score else 'sunday'
         best_score = max(sat_score, sun_score)
-        best_weather = weather[best_day]
+        best_weather = weather.get(best_day)
 
         results.append({
             'osm_id': place.osm_id,
@@ -278,18 +279,3 @@ def get_recommendations():
 
     results.sort(key=lambda x: x['score'], reverse=True)
     return results[:10]
-
-
-def _recommend_text(score, weather):
-    if not weather:
-        return 'Нет данных'
-    if score >= 80:
-        return 'Отличная погода — обязательно посетите!'
-    elif score >= 60:
-        return 'Хорошая погода, стоит съездить'
-    elif score >= 40:
-        return 'Погода средняя, но поездка возможна'
-    elif score >= 20:
-        return 'Погода не очень, лучше выбрать другой день'
-    else:
-        return 'Плохая погода, лучше не ехать'

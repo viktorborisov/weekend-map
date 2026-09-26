@@ -11,4 +11,5 @@ urlpatterns = [
     path('auth/me/', views.current_user, name='current-user'),
     path('visited/', views.visited_list, name='visited-list'),
     path('visited/toggle/', views.toggle_visited, name='toggle-visited'),
+    path('weather/recommendations/', views.weather_recommendations, name='weather-recommendations'),
 ]

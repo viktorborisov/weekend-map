@@ -11,6 +11,9 @@ services:
       - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,backend,194.87.239.102
       - OVERPASS_API_URL=https://overpass-api.de/api/interpreter
       - CACHE_OVERPASS_SECONDS=3600
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     ports:
       - "8001:8000"
     restart: unless-stopped
