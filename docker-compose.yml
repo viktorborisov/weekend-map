@@ -6,9 +6,9 @@ services:
       - db_data:/app/db
       - media_data:/app/media
     environment:
-      - DJANGO_DEBUG=${DJANGO_DEBUG:-True}
+      - DJANGO_DEBUG=${DJANGO_DEBUG:-False}
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-change-me-in-production}
-      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,backend
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,backend,194.87.239.102
       - OVERPASS_API_URL=https://overpass-api.de/api/interpreter
       - CACHE_OVERPASS_SECONDS=3600
     ports:
