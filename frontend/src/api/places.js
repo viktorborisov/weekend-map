@@ -158,7 +158,7 @@ export async function fetchPlaceWeather(osmId, lat, lon) {
 
   try {
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 8000)
+    const timeout = setTimeout(() => controller.abort(), 5000)
     const resp = await fetch(`https://wttr.in/${lat},${lon}?format=j1`, {
       headers: { 'User-Agent': 'curl/7.0' },
       signal: controller.signal,
@@ -205,32 +205,68 @@ export async function fetchPlaceWeather(osmId, lat, lon) {
   }
 }
 
-export async function fetchAllWeather(places) {
-  const BATCH = 5
-  const results = []
+const WEATHER_STATIONS = [
+  { lat: 59.95, lon: 31.03 },
+  { lat: 59.57, lon: 30.11 },
+  { lat: 59.71, lon: 29.03 },
+  { lat: 59.99, lon: 32.30 },
+  { lat: 60.72, lon: 28.73 },
+  { lat: 61.03, lon: 30.12 },
+  { lat: 60.26, lon: 29.61 },
+  { lat: 60.78, lon: 33.54 },
+  { lat: 58.74, lon: 29.85 },
+  { lat: 59.47, lon: 33.85 },
+  { lat: 59.37, lon: 28.21 },
+  { lat: 60.92, lon: 34.19 },
+]
 
-  for (let i = 0; i < places.length; i += BATCH) {
-    const batch = places.slice(i, i + BATCH)
-    const weatherResults = await Promise.all(
-      batch.map(p => fetchPlaceWeather(p.osm_id, p.lat, p.lon))
-    )
-    for (let j = 0; j < batch.length; j++) {
-      const weather = weatherResults[j]
-      if (!weather) continue
-      const place = batch[j]
-      const satScore = scoreWeather(weather.saturday)
-      const sunScore = scoreWeather(weather.sunday)
-      const bestDay = satScore >= sunScore ? 'saturday' : 'sunday'
-      const bestScore = Math.max(satScore, sunScore)
-      results.push({
-        ...place,
-        weather,
-        best_day: bestDay,
-        best_day_label: bestDay === 'saturday' ? 'Суббота' : 'Воскресенье',
-        score: bestScore,
-        recommendation: recommendText(bestScore),
+function nearestStation(lat, lon) {
+  let best = WEATHER_STATIONS[0]
+  let bestDist = Infinity
+  for (const s of WEATHER_STATIONS) {
+    const d = (s.lat - lat) ** 2 + (s.lon - lon) ** 2
+    if (d < bestDist) { bestDist = d; best = s }
+  }
+  return best
+}
+
+export async function fetchAllWeather(places) {
+  const stationWeather = new Map()
+
+  for (let i = 0; i < WEATHER_STATIONS.length; i += 4) {
+    const batch = WEATHER_STATIONS.slice(i, i + 4)
+    const settled = await Promise.allSettled(
+      batch.map(async (s) => {
+        const w = await fetchPlaceWeather('st', s.lat, s.lon)
+        return { st: s, w }
       })
+    )
+    for (const r of settled) {
+      if (r.status === 'fulfilled' && r.value.w) {
+        stationWeather.set(r.value.st, r.value.w)
+      }
     }
+  }
+
+  if (stationWeather.size === 0) return []
+
+  const results = []
+  for (const place of places) {
+    const st = nearestStation(place.lat, place.lon)
+    const weather = stationWeather.get(st)
+    if (!weather) continue
+    const satScore = scoreWeather(weather.saturday)
+    const sunScore = scoreWeather(weather.sunday)
+    const bestDay = satScore >= sunScore ? 'saturday' : 'sunday'
+    const bestScore = Math.max(satScore, sunScore)
+    results.push({
+      ...place,
+      weather,
+      best_day: bestDay,
+      best_day_label: bestDay === 'saturday' ? 'Суббота' : 'Воскресенье',
+      score: bestScore,
+      recommendation: recommendText(bestScore),
+    })
   }
   results.sort((a, b) => b.score - a.score)
   return results
