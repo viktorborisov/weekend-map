@@ -1,0 +1,31 @@
+services:
+  backend:
+    build: ./backend
+    container_name: weekend-map-backend
+    volumes:
+      - db_data:/app/db
+      - media_data:/app/media
+    environment:
+      - DJANGO_DEBUG=${DJANGO_DEBUG:-True}
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-change-me-in-production}
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,backend
+      - OVERPASS_API_URL=https://overpass-api.de/api/interpreter
+      - CACHE_OVERPASS_SECONDS=3600
+    ports:
+      - "8001:8000"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: weekend-map-frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+    volumes:
+      - media_data:/usr/share/nginx/media:ro
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  media_data:
