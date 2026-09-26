@@ -135,6 +135,29 @@ export default function MapView({ places, selectedPlace, onSelectPlace, user, on
                   </a>
                 )}
               </div>
+              {place.weather && (place.weather.saturday || place.weather.sunday) && (
+                <div className="popup-weather">
+                  <div className="popup-weather-title">🌤️ Погода на выходные</div>
+                  {place.weather.saturday && (
+                    <div className="popup-weather-day">
+                      <span className="popup-weather-label">Сб:</span>
+                      <span className="popup-weather-emoji">{place.weather.saturday.emoji}</span>
+                      <span>{place.weather.saturday.temp_max}°/{place.weather.saturday.temp_min}°</span>
+                      {place.weather.saturday.precip > 0 && <span>💧{place.weather.saturday.precip}мм</span>}
+                      <span>💨{place.weather.saturday.wind}м/с</span>
+                    </div>
+                  )}
+                  {place.weather.sunday && (
+                    <div className="popup-weather-day">
+                      <span className="popup-weather-label">Вс:</span>
+                      <span className="popup-weather-emoji">{place.weather.sunday.emoji}</span>
+                      <span>{place.weather.sunday.temp_max}°/{place.weather.sunday.temp_min}°</span>
+                      {place.weather.sunday.precip > 0 && <span>💧{place.weather.sunday.precip}мм</span>}
+                      <span>💨{place.weather.sunday.wind}м/с</span>
+                    </div>
+                  )}
+                </div>
+              )}
               {user && (
                 <button
                   className={`popup-visited-btn ${place.visited ? 'visited' : ''}`}

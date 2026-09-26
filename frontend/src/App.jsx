@@ -1,10 +1,12 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import MapView from './components/MapView'
 import Sidebar from './components/Sidebar'
 import AuthForm from './components/AuthForm'
+import WeatherPanel from './components/WeatherPanel'
 import { usePlaces } from './hooks/usePlaces'
 import { useAuth } from './hooks/useAuth'
-import { toggleVisitedPlace } from './api/places'
+import { useWeather } from './hooks/useWeather'
+import { toggleVisitedPlace, fetchPlaceWeather } from './api/places'
 import './styles/main.css'
 
 export default function App() {
@@ -20,9 +22,10 @@ export default function App() {
   } = usePlaces()
 
   const { user, loading: authLoading, register, login, logout } = useAuth()
+  const { recommendations, loading: weatherLoading, error: weatherError, showPanel, setShowPanel, reload: reloadWeather } = useWeather(places)
   const [selectedPlace, setSelectedPlace] = useState(null)
   const [authError, setAuthError] = useState('')
-  const [authMode, setAuthMode] = useState(null) // null | 'login' | 'register'
+  const [authMode, setAuthMode] = useState(null)
 
   const handleCategoryChange = (cat) => {
     setCategory(cat)
@@ -55,18 +58,22 @@ export default function App() {
     if (!user) return
     try {
       const result = await toggleVisitedPlace(osmId)
-      // Update places in-place
-      const updated = places.map((p) =>
-        p.osm_id === osmId ? { ...p, visited: result.visited } : p
-      )
-      // Directly update via reload is too heavy; use a workaround
-      // We need a setPlaces from usePlaces, but let's just reload
       reload(category)
       return result.visited
     } catch (e) {
       console.error('Toggle visited failed:', e)
     }
-  }, [user, places, category, reload])
+  }, [user, category, reload])
+
+  // Load weather for selected place
+  useEffect(() => {
+    if (!selectedPlace) return
+    fetchPlaceWeather(selectedPlace.osm_id, selectedPlace.lat, selectedPlace.lon)
+      .then((weather) => {
+        setSelectedPlace((prev) => prev ? { ...prev, weather } : prev)
+      })
+      .catch(() => {})
+  }, [selectedPlace?.osm_id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="app">
@@ -85,6 +92,7 @@ export default function App() {
           onLogout={logout}
           onShowLogin={() => setAuthMode('login')}
           onToggleVisited={handleToggleVisited}
+          onShowWeather={() => { setShowPanel(true); reloadWeather() }}
         />
         <div className="map-container">
           <MapView
@@ -103,6 +111,16 @@ export default function App() {
           onRegister={handleRegister}
           error={authError}
           loading={authLoading}
+        />
+      )}
+
+      {showPanel && (
+        <WeatherPanel
+          recommendations={recommendations}
+          loading={weatherLoading}
+          error={weatherError}
+          onClose={() => setShowPanel(false)}
+          onSelectPlace={setSelectedPlace}
         />
       )}
     </div>

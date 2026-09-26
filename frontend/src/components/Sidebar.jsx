@@ -45,6 +45,8 @@ export default function Sidebar({
   onLogout,
   onShowLogin,
   onToggleVisited,
+  onShowWeather,
+  weatherData,
 }) {
   const visitedCount = places.filter((p) => p.visited).length
 
@@ -90,6 +92,10 @@ export default function Sidebar({
         </div>
       </div>
 
+      <button className="weather-btn-main" onClick={onShowWeather}>
+        🌤️ Прогноз погоды и рекомендации
+      </button>
+
       {error && <div className="error">⚠️ {error}</div>}
 
       <div className="places-list">
@@ -115,6 +121,16 @@ export default function Sidebar({
                 {place.name}
               </div>
               <div className="place-category">{CATEGORY_LABELS[place.category] || place.category}</div>
+              {place.weather && (
+                <div className="place-weather-mini">
+                  {place.weather.saturday && (
+                    <span className="mini-weather">Сб {place.weather.saturday.emoji}{place.weather.saturday.temp_max}°</span>
+                  )}
+                  {place.weather.sunday && (
+                    <span className="mini-weather">Вс {place.weather.sunday.emoji}{place.weather.sunday.temp_max}°</span>
+                  )}
+                </div>
+              )}
             </div>
             {user && (
               <button
