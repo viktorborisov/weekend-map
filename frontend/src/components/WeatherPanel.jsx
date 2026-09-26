@@ -3,7 +3,7 @@ export default function WeatherPanel({ recommendations, loading, error, onClose,
     <div className="weather-overlay" onClick={onClose}>
       <div className="weather-modal" onClick={(e) => e.stopPropagation()}>
         <div className="weather-modal-header">
-          <h2>🌤️ Где лучше поехать на выходные</h2>
+          <h2>🌤️ Куда лучше поехать на выходные</h2>
           <button className="weather-close" onClick={onClose}>✕</button>
         </div>
 

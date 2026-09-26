@@ -90,7 +90,7 @@ export default function Sidebar({
       </div>
 
       <button className="weather-btn-main" onClick={onShowWeather}>
-        🌤️ Прогноз погоды и рекомендации
+        🌤️ Куда лучше поехать на выходные
       </button>
 
       {error && <div className="error">⚠️ {error}</div>}
