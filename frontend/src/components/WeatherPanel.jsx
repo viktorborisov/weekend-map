@@ -7,7 +7,7 @@ export default function WeatherPanel({ recommendations, loading, error, onClose,
           <button className="weather-close" onClick={onClose}>✕</button>
         </div>
 
-        {loading && <div className="weather-loading">⏳ Загрузка прогноза погоды для всех мест...</div>}
+        {loading && <div className="weather-loading">⏳ Загрузка прогноза погоды (батчами по 5 мест)...</div>}
         {error && <div className="weather-error">⚠️ {error}</div>}
 
         {!loading && !error && recommendations.length > 0 && (
@@ -71,6 +71,13 @@ export default function WeatherPanel({ recommendations, loading, error, onClose,
               })}
             </div>
           </>
+        )}
+
+        {!loading && !error && recommendations.length === 0 && (
+          <div className="weather-loading">
+            Сервис погоды wttr.in не отвечает.<br/>
+            Попробуйте позже.
+          </div>
         )}
       </div>
     </div>

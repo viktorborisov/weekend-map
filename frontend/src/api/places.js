@@ -157,9 +157,13 @@ export async function fetchPlaceWeather(osmId, lat, lon) {
   const [satDate, sunDate] = getWeekendDates()
 
   try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 8000)
     const resp = await fetch(`https://wttr.in/${lat},${lon}?format=j1`, {
       headers: { 'User-Agent': 'curl/7.0' },
+      signal: controller.signal,
     })
+    clearTimeout(timeout)
     if (!resp.ok) return null
     const data = await resp.json()
     const weatherArr = data.weather || []
@@ -202,23 +206,31 @@ export async function fetchPlaceWeather(osmId, lat, lon) {
 }
 
 export async function fetchAllWeather(places) {
+  const BATCH = 5
   const results = []
-  for (const place of places) {
-    const weather = await fetchPlaceWeather(place.osm_id, place.lat, place.lon)
-    if (!weather) continue
-    const satScore = scoreWeather(weather.saturday)
-    const sunScore = scoreWeather(weather.sunday)
-    const bestDay = satScore >= sunScore ? 'saturday' : 'sunday'
-    const bestScore = Math.max(satScore, sunScore)
-    results.push({
-      ...place,
-      weather,
-      best_day: bestDay,
-      best_day_label: bestDay === 'saturday' ? 'Суббота' : 'Воскресенье',
-      score: bestScore,
-      recommendation: recommendText(bestScore),
-    })
-    await new Promise(r => setTimeout(r, 200))
+
+  for (let i = 0; i < places.length; i += BATCH) {
+    const batch = places.slice(i, i + BATCH)
+    const weatherResults = await Promise.all(
+      batch.map(p => fetchPlaceWeather(p.osm_id, p.lat, p.lon))
+    )
+    for (let j = 0; j < batch.length; j++) {
+      const weather = weatherResults[j]
+      if (!weather) continue
+      const place = batch[j]
+      const satScore = scoreWeather(weather.saturday)
+      const sunScore = scoreWeather(weather.sunday)
+      const bestDay = satScore >= sunScore ? 'saturday' : 'sunday'
+      const bestScore = Math.max(satScore, sunScore)
+      results.push({
+        ...place,
+        weather,
+        best_day: bestDay,
+        best_day_label: bestDay === 'saturday' ? 'Суббота' : 'Воскресенье',
+        score: bestScore,
+        recommendation: recommendText(bestScore),
+      })
+    }
   }
   results.sort((a, b) => b.score - a.score)
   return results
