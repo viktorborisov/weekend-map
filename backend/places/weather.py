@@ -98,9 +98,9 @@ def fetch_weather_for_place(lat, lon):
 
     try:
         result = subprocess.run(
-            ['curl', '-s', '--max-time', '10', '-H', 'User-Agent: curl/7.0',
+            ['curl', '-s', '--max-time', '30', '-H', 'User-Agent: curl/7.0',
              f'{WTTR_URL}/{lat},{lon}?format=j1'],
-            capture_output=True, timeout=12,
+            capture_output=True, timeout=35,
         )
         if result.returncode != 0 or not result.stdout:
             return None
@@ -242,18 +242,16 @@ def _recommend_text(score, weather):
 
 
 WEATHER_STATIONS = [
-    (59.95, 31.03),
-    (59.57, 30.11),
-    (59.71, 29.03),
-    (59.99, 32.30),
-    (60.72, 28.73),
-    (61.03, 30.12),
-    (60.26, 29.61),
-    (60.78, 33.54),
-    (58.74, 29.85),
-    (59.47, 33.85),
-    (59.37, 28.21),
-    (60.92, 34.19),
+    (59.95, 31.03),   # SPb
+    (59.71, 29.03),   # W
+    (59.99, 32.30),   # E
+    (60.72, 28.73),   # NW (Vyborg)
+    (61.03, 30.12),   # N (Priozersk)
+    (60.78, 33.54),   # NE (Lodeynoye Pole)
+    (58.74, 29.85),   # SW (Gdov)
+    (59.47, 33.85),   # SE (Tikhvin)
+    (59.37, 28.21),   # SW far (Kingisepp)
+    (60.92, 34.19),   # NE far (Svir)
 ]
 
 
@@ -272,7 +270,7 @@ def get_recommendations():
     from .models import CachedPlace
 
     station_weather = {}
-    with ThreadPoolExecutor(max_workers=6) as executor:
+    with ThreadPoolExecutor(max_workers=10) as executor:
         futures = {
             executor.submit(fetch_weather_for_place, s_lat, s_lon): (s_lat, s_lon)
             for s_lat, s_lon in WEATHER_STATIONS
