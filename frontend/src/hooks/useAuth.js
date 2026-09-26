@@ -10,6 +10,7 @@ import {
 export function useAuth() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     const token = getToken()
@@ -29,15 +30,25 @@ export function useAuth() {
   }, [])
 
   const register = useCallback(async (username, password, email) => {
-    const data = await registerUser(username, password, email)
-    setUser(data.user)
-    return data
+    setSubmitting(true)
+    try {
+      const data = await registerUser(username, password, email)
+      setUser(data.user)
+      return data
+    } finally {
+      setSubmitting(false)
+    }
   }, [])
 
   const login = useCallback(async (username, password) => {
-    const data = await loginUser(username, password)
-    setUser(data.user)
-    return data
+    setSubmitting(true)
+    try {
+      const data = await loginUser(username, password)
+      setUser(data.user)
+      return data
+    } finally {
+      setSubmitting(false)
+    }
   }, [])
 
   const logout = useCallback(() => {
@@ -45,5 +56,5 @@ export function useAuth() {
     setUser(null)
   }, [])
 
-  return { user, loading, register, login, logout }
+  return { user, loading, submitting, register, login, logout }
 }

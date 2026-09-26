@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function AuthForm({ onLogin, onRegister, error, loading }) {
   const [mode, setMode] = useState('login')
@@ -7,11 +7,19 @@ export default function AuthForm({ onLogin, onRegister, error, loading }) {
   const [email, setEmail] = useState('')
   const [localError, setLocalError] = useState('')
 
+  useEffect(() => {
+    setLocalError('')
+  }, [mode])
+
   const handleSubmit = (e) => {
     e.preventDefault()
     setLocalError('')
     if (!username.trim() || !password) {
       setLocalError('Заполните имя пользователя и пароль')
+      return
+    }
+    if (mode === 'register' && password.length < 6) {
+      setLocalError('Пароль должен быть не менее 6 символов')
       return
     }
     if (mode === 'register') {
@@ -24,7 +32,7 @@ export default function AuthForm({ onLogin, onRegister, error, loading }) {
   const displayError = localError || error
 
   return (
-    <div className="auth-overlay">
+    <div className="auth-overlay" onClick={(e) => { if (e.target === e.currentTarget) { /* don't close */ } }}>
       <div className="auth-modal">
         <h2 className="auth-title">
           {mode === 'login' ? '🔑 Вход' : '📝 Регистрация'}
@@ -37,6 +45,8 @@ export default function AuthForm({ onLogin, onRegister, error, loading }) {
             onChange={(e) => setUsername(e.target.value)}
             className="auth-input"
             autoComplete="username"
+            autoFocus
+            disabled={loading}
           />
           {mode === 'register' && (
             <input
@@ -46,6 +56,7 @@ export default function AuthForm({ onLogin, onRegister, error, loading }) {
               onChange={(e) => setEmail(e.target.value)}
               className="auth-input"
               autoComplete="email"
+              disabled={loading}
             />
           )}
           <input
@@ -55,10 +66,11 @@ export default function AuthForm({ onLogin, onRegister, error, loading }) {
             onChange={(e) => setPassword(e.target.value)}
             className="auth-input"
             autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            disabled={loading}
           />
           {displayError && <div className="auth-error">{displayError}</div>}
           <button type="submit" className="auth-btn" disabled={loading}>
-            {loading ? '⏳...' : mode === 'login' ? 'Войти' : 'Зарегистрироваться'}
+            {loading ? '⏳ Подождите...' : mode === 'login' ? 'Войти' : 'Зарегистрироваться'}
           </button>
         </form>
         <button
@@ -67,6 +79,7 @@ export default function AuthForm({ onLogin, onRegister, error, loading }) {
             setMode(mode === 'login' ? 'register' : 'login')
             setLocalError('')
           }}
+          disabled={loading}
         >
           {mode === 'login'
             ? 'Нет аккаунта? Зарегистрироваться'

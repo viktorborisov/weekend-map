@@ -21,7 +21,7 @@ export default function App() {
     refresh,
   } = usePlaces()
 
-  const { user, loading: authLoading, register, login, logout } = useAuth()
+  const { user, loading: authLoading, submitting: authSubmitting, register, login, logout } = useAuth()
   const { recommendations, loading: weatherLoading, error: weatherError, showPanel, setShowPanel, reload: reloadWeather } = useWeather(places)
   const [selectedPlace, setSelectedPlace] = useState(null)
   const [authError, setAuthError] = useState('')
@@ -110,7 +110,7 @@ export default function App() {
           onLogin={handleLogin}
           onRegister={handleRegister}
           error={authError}
-          loading={authLoading}
+          loading={authSubmitting}
         />
       )}
 
