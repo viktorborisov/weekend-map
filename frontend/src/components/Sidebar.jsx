@@ -3,7 +3,6 @@ const CATEGORIES = [
   { key: 'nature', label: 'Природа', emoji: '🌿' },
   { key: 'historic', label: 'История', emoji: '🏛️' },
   { key: 'museum', label: 'Музеи', emoji: '🖼️' },
-  { key: 'viewpoint', label: 'Смотровые', emoji: '👁️' },
   { key: 'water', label: 'Водоёмы', emoji: '🌊' },
   { key: 'leisure', label: 'Отдых', emoji: '🎪' },
   { key: 'tourism', label: 'Туризм', emoji: '⭐' },
@@ -42,16 +41,36 @@ export default function Sidebar({
   onRefresh,
   onSelectPlace,
   selectedPlace,
+  user,
+  onLogout,
+  onShowLogin,
+  onToggleVisited,
 }) {
+  const visitedCount = places.filter((p) => p.visited).length
+
   return (
     <div className="sidebar">
       <div className="sidebar-header">
         <h1>🏕️ Выходные в Ленобласти</h1>
         <p className="subtitle">Куда поехать на выходные</p>
+        {user ? (
+          <div className="user-panel">
+            <div className="user-info">
+              <span className="user-avatar">👤</span>
+              <span className="user-name">{user.username}</span>
+              <span className="user-visited">✅ {visitedCount}</span>
+            </div>
+            <button className="logout-btn" onClick={onLogout}>Выйти</button>
+          </div>
+        ) : (
+          <button className="login-btn-header" onClick={onShowLogin}>
+            🔑 Войти / Регистрация
+          </button>
+        )}
       </div>
 
       <div className="filters">
-        {CATEGORIES.map(cat => (
+        {CATEGORIES.map((cat) => (
           <button
             key={cat.key}
             className={`filter-btn ${category === cat.key ? 'active' : ''}`}
@@ -67,17 +86,17 @@ export default function Sidebar({
           {refreshing ? '⏳ Обновление...' : loading ? '⏳ Загрузка...' : '🔄 Обновить данные'}
         </button>
         <div className="places-count">
-          {loading ? 'Загрузка...' : `Найдено мест: ${places.length}`}
+          {loading ? 'Загрузка...' : `Мест: ${places.length}${visitedCount ? ` · ✅ ${visitedCount}` : ''}`}
         </div>
       </div>
 
       {error && <div className="error">⚠️ {error}</div>}
 
       <div className="places-list">
-        {places.map(place => (
+        {places.map((place) => (
           <div
             key={place.osm_id}
-            className={`place-card ${selectedPlace?.osm_id === place.osm_id ? 'selected' : ''}`}
+            className={`place-card ${selectedPlace?.osm_id === place.osm_id ? 'selected' : ''} ${place.visited ? 'visited' : ''}`}
             onClick={() => onSelectPlace(place)}
           >
             {place.photo ? (
@@ -91,9 +110,24 @@ export default function Sidebar({
               <div className="place-emoji">{CATEGORY_EMOJI[place.category] || '📍'}</div>
             )}
             <div className="place-info">
-              <div className="place-name">{place.name}</div>
+              <div className="place-name">
+                {place.visited && <span className="visited-check">✅</span>}
+                {place.name}
+              </div>
               <div className="place-category">{CATEGORY_LABELS[place.category] || place.category}</div>
             </div>
+            {user && (
+              <button
+                className="visited-toggle"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onToggleVisited(place.osm_id)
+                }}
+                title={place.visited ? 'Отметить как непосещённое' : 'Отметить как посещённое'}
+              >
+                {place.visited ? '✅' : '⚪'}
+              </button>
+            )}
           </div>
         ))}
         {!loading && places.length === 0 && (

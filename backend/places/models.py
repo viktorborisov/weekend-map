@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -39,3 +40,17 @@ class CachedPlace(models.Model):
         if self.image:
             return self.image.url
         return self.photo_url or ''
+
+
+class VisitedPlace(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='visited_places')
+    place = models.ForeignKey(CachedPlace, on_delete=models.CASCADE, related_name='visitors')
+    visited_at = models.DateTimeField(auto_now_add=True)
+    note = models.TextField(blank=True, default='')
+
+    class Meta:
+        unique_together = ('user', 'place')
+        ordering = ['-visited_at']
+
+    def __str__(self):
+        return f'{self.user.username} — {self.place.name}'

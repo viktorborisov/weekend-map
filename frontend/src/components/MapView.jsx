@@ -32,9 +32,11 @@ const CATEGORY_COLORS = {
   food: '#ff9800',
 }
 
-function makeIcon(category) {
+function makeIcon(category, visited) {
   const emoji = CATEGORY_ICONS[category] || '📍'
   const color = CATEGORY_COLORS[category] || '#333'
+  const ring = visited ? 'box-shadow: 0 0 0 3px #00cc00, 0 2px 6px rgba(0,0,0,0.3);' : 'box-shadow: 0 2px 6px rgba(0,0,0,0.3);'
+  const badge = visited ? '<div style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:#00cc00;border-radius:50%;border:2px solid white;font-size:9px;display:flex;align-items:center;justify-content:center;">✓</div>' : ''
   return L.divIcon({
     html: `<div style="
       background: ${color};
@@ -42,9 +44,10 @@ function makeIcon(category) {
       border-radius: 50% 50% 50% 0;
       transform: rotate(-45deg);
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      ${ring}
       border: 2px solid white;
-    "><span style="transform: rotate(45deg); font-size: 14px;">${emoji}</span></div>`,
+      position: relative;
+    "><span style="transform: rotate(45deg); font-size: 14px;">${emoji}</span>${badge}</div>`,
     className: 'custom-marker',
     iconSize: [32, 32],
     iconAnchor: [16, 32],
@@ -56,7 +59,7 @@ function FitBounds({ places }) {
   const map = useMap()
   useEffect(() => {
     if (places.length > 0) {
-      const bounds = L.latLngBounds(places.map(p => [p.lat, p.lon]))
+      const bounds = L.latLngBounds(places.map((p) => [p.lat, p.lon]))
       map.fitBounds(bounds, { padding: [50, 50] })
     }
   }, [places, map])
@@ -74,7 +77,7 @@ const CATEGORY_LABELS = {
   food: 'Еда',
 }
 
-export default function MapView({ places, selectedPlace, onSelectPlace }) {
+export default function MapView({ places, selectedPlace, onSelectPlace, user, onToggleVisited }) {
   return (
     <MapContainer
       center={[59.8, 30.8]}
@@ -84,14 +87,14 @@ export default function MapView({ places, selectedPlace, onSelectPlace }) {
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; OpenStreetMap contributors'
+        attribution="&copy; OpenStreetMap contributors"
       />
       <FitBounds places={places} />
-      {places.map(place => (
+      {places.map((place) => (
         <Marker
           key={place.osm_id}
           position={[place.lat, place.lon]}
-          icon={makeIcon(place.category)}
+          icon={makeIcon(place.category, place.visited)}
           eventHandlers={{
             click: () => onSelectPlace(place),
           }}
@@ -132,6 +135,14 @@ export default function MapView({ places, selectedPlace, onSelectPlace }) {
                   </a>
                 )}
               </div>
+              {user && (
+                <button
+                  className={`popup-visited-btn ${place.visited ? 'visited' : ''}`}
+                  onClick={() => onToggleVisited(place.osm_id)}
+                >
+                  {place.visited ? '✅ Посещено' : '⚪ Отметить как посещённое'}
+                </button>
+              )}
             </div>
           </Popup>
         </Marker>

@@ -261,3 +261,209 @@ html, body, #root {
     height: 60%;
   }
 }
+
+/* Auth */
+.auth-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.auth-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  width: 360px;
+  max-width: 90vw;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.auth-title {
+  font-size: 22px;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #1a5a1a;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-input {
+  padding: 12px 16px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: border-color 0.2s;
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: #2a7f2a;
+}
+
+.auth-error {
+  color: #d32f2f;
+  font-size: 13px;
+  text-align: center;
+}
+
+.auth-btn {
+  padding: 12px;
+  background: #2a7f2a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.auth-btn:hover:not(:disabled) {
+  background: #1a5a1a;
+}
+
+.auth-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-switch {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px;
+  background: none;
+  border: none;
+  color: #2a7f2a;
+  font-size: 14px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.auth-switch:hover {
+  text-decoration: underline;
+}
+
+/* User panel in sidebar header */
+.user-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  font-size: 14px;
+}
+
+.user-avatar {
+  font-size: 18px;
+}
+
+.user-visited {
+  background: rgba(0, 204, 0, 0.3);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.logout-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.login-btn-header {
+  margin-top: 12px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.login-btn-header:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Visited toggle in sidebar */
+.visited-toggle {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 18px;
+  border-radius: 50%;
+  transition: transform 0.15s;
+}
+
+.visited-toggle:hover {
+  transform: scale(1.2);
+}
+
+.place-card.visited {
+  opacity: 0.7;
+}
+
+.place-card.visited .place-name {
+  color: #2a7f2a;
+}
+
+.visited-check {
+  margin-right: 4px;
+}
+
+/* Visited button in popup */
+.popup-visited-btn {
+  margin-top: 10px;
+  padding: 8px 12px;
+  width: 100%;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.popup-visited-btn:hover {
+  border-color: #2a7f2a;
+  background: #e8f5e8;
+}
+
+.popup-visited-btn.visited {
+  background: #d4edda;
+  border-color: #2a7f2a;
+  color: #1a5a1a;
+}
