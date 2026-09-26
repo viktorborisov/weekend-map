@@ -84,9 +84,6 @@ export default function Sidebar({
       </div>
 
       <div className="sidebar-actions">
-        <button className="refresh-btn" onClick={onRefresh} disabled={loading || refreshing}>
-          {refreshing ? '⏳ Обновление...' : loading ? '⏳ Загрузка...' : '🔄 Обновить данные'}
-        </button>
         <div className="places-count">
           {loading ? 'Загрузка...' : `Мест: ${places.length}${visitedCount ? ` · ✅ ${visitedCount}` : ''}`}
         </div>

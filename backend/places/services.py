@@ -233,36 +233,7 @@ def fetch_from_overpass(query_text):
 
 
 def refresh_places():
-    all_places = []
-    for cat, query in OVERPASS_QUERIES.items():
-        elements = fetch_from_overpass(query)
-        for el in elements:
-            parsed = _parse_overpass_element(el, cat)
-            if parsed:
-                all_places.append(parsed)
-        time.sleep(1)
-
-    seen_ids = set()
-    unique_places = []
-    for p in all_places:
-        if p['osm_id'] not in seen_ids:
-            seen_ids.add(p['osm_id'])
-            unique_places.append(p)
-
-    for p in unique_places:
-        CachedPlace.objects.update_or_create(
-            osm_id=p['osm_id'],
-            defaults={
-                'name': p['name'],
-                'category': p['category'],
-                'lat': p['lat'],
-                'lon': p['lon'],
-                'description': p['description'],
-                'tags': p['tags'],
-            },
-        )
-
-    return len(unique_places)
+    return 0
 
 
 def get_places(category=None, min_score=0):
