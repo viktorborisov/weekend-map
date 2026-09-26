@@ -7,7 +7,7 @@ export default function WeatherPanel({ recommendations, loading, error, onClose,
           <button className="weather-close" onClick={onClose}>✕</button>
         </div>
 
-        {loading && <div className="weather-loading">⏳ Загрузка прогноза погоды (батчами по 5 мест)...</div>}
+        {loading && <div className="weather-loading">⏳ Загрузка прогноза погоды...</div>}
         {error && <div className="weather-error">⚠️ {error}</div>}
 
         {!loading && !error && recommendations.length > 0 && (
