@@ -1,4 +1,5 @@
-import requests
+import json
+import subprocess
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from django.core.cache import cache
@@ -96,14 +97,14 @@ def fetch_weather_for_place(lat, lon):
     sun_str = sun.strftime('%Y-%m-%d')
 
     try:
-        resp = requests.get(
-            f'{WTTR_URL}/{lat},{lon}',
-            params={'format': 'j1'},
-            timeout=10,
-            headers={'User-Agent': 'curl/7.0'},
+        result = subprocess.run(
+            ['curl', '-s', '--max-time', '10', '-H', 'User-Agent: curl/7.0',
+             f'{WTTR_URL}/{lat},{lon}?format=j1'],
+            capture_output=True, timeout=12,
         )
-        resp.raise_for_status()
-        data = resp.json()
+        if result.returncode != 0 or not result.stdout:
+            return None
+        data = json.loads(result.stdout)
     except Exception:
         return None
 
@@ -271,14 +272,14 @@ def get_recommendations():
     from .models import CachedPlace
 
     station_weather = {}
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=6) as executor:
         futures = {
             executor.submit(fetch_weather_for_place, s_lat, s_lon): (s_lat, s_lon)
             for s_lat, s_lon in WEATHER_STATIONS
         }
-        for future in as_completed(futures, timeout=15):
+        for future in as_completed(futures, timeout=60):
             try:
-                w = future.result(timeout=15)
+                w = future.result()
                 if w:
                     station_weather[futures[future]] = w
             except Exception:
