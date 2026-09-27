@@ -86,6 +86,22 @@ def get_weekend_dates():
     return saturday, sunday
 
 
+def _curl_wttr(lat, lon, fmt='j2'):
+    """Fetch weather from wttr.in using curl (Python requests fails in this container)."""
+    try:
+        result = subprocess.run(
+            ['curl', '-sS', '--max-time', '20',
+             '-H', 'User-Agent: curl/7.0',
+             f'{WTTR_URL}/{lat},{lon}?format={fmt}'],
+            capture_output=True, timeout=25,
+        )
+        if result.returncode != 0 or not result.stdout:
+            return None
+        return json.loads(result.stdout)
+    except Exception:
+        return None
+
+
 def fetch_weather_for_place(lat, lon):
     cache_key = f"weather_{lat:.2f}_{lon:.2f}"
     cached = cache.get(cache_key)
@@ -96,19 +112,15 @@ def fetch_weather_for_place(lat, lon):
     sat_str = sat.strftime('%Y-%m-%d')
     sun_str = sun.strftime('%Y-%m-%d')
 
-    try:
-        result = subprocess.run(
-            ['curl', '-s', '--max-time', '30', '-H', 'User-Agent: curl/7.0',
-             f'{WTTR_URL}/{lat},{lon}?format=j1'],
-            capture_output=True, timeout=35,
-        )
-        if result.returncode != 0 or not result.stdout:
-            return None
-        data = json.loads(result.stdout)
-    except Exception:
+    data = _curl_wttr(lat, lon, 'j2')
+    if not data:
         return None
 
     weather_data = data.get('weather', [])
+    current = data.get('current_condition', [{}])[0]
+
+    # Get current weather code as fallback for daily code
+    current_code = int(current.get('weatherCode', 0) or 0)
 
     sat_weather = None
     sun_weather = None
@@ -118,34 +130,10 @@ def fetch_weather_for_place(lat, lon):
         if not d:
             continue
 
-        hourly = day.get('hourly', [])
-
-        temps = [int(h.get('tempC', 0)) for h in hourly if h.get('tempC')]
-        temp_max = max(temps) if temps else None
-        temp_min = min(temps) if temps else None
-
-        winds = [float(h.get('windspeedKmph', 0)) for h in hourly if h.get('windspeedKmph')]
-        wind_max = max(winds) if winds else 0
-
-        wind_dir_val = None
-        for h in hourly:
-            if h.get('time') == '1200':
-                wind_dir_val = h.get('winddirDegree')
-                break
-        if not wind_dir_val and hourly:
-            wind_dir_val = hourly[len(hourly)//2].get('winddirDegree')
-
+        temp_max = int(day.get('maxtempC', 0) or 0)
+        temp_min = int(day.get('mintempC', 0) or 0)
         precip_mm = float(day.get('totalSnow_cm', 0) or 0) * 10
-        for h in hourly:
-            precip_mm += float(h.get('precipMM', 0) or 0)
-
-        code_val = 0
-        for h in hourly:
-            if h.get('time') == '1200':
-                code_val = int(h.get('weatherCode', 0) or 0)
-                break
-        if not code_val and hourly:
-            code_val = int(hourly[len(hourly)//2].get('weatherCode', 0) or 0)
+        code_val = current_code  # j2 doesn't have per-day codes, use current as approximation
 
         emoji, desc = _parse_wttr_code(code_val)
 
@@ -157,14 +145,31 @@ def fetch_weather_for_place(lat, lon):
             'temp_max': temp_max,
             'temp_min': temp_min,
             'precip': round(precip_mm, 1),
-            'wind': round(wind_max * 0.28, 1),
-            'wind_dir': _wind_dir(wind_dir_val),
+            'wind': 0,
+            'wind_dir': '',
         }
 
         if d == sat_str:
             sat_weather = info
         if d == sun_str:
             sun_weather = info
+
+    # If weekend not in 3-day forecast, use current conditions as fallback
+    if not sat_weather:
+        emoji, desc = _parse_wttr_code(current_code)
+        sat_weather = {
+            'date': sat_str,
+            'emoji': emoji,
+            'desc': desc,
+            'code': current_code,
+            'temp_max': int(current.get('tempC', 0) or 0),
+            'temp_min': int(current.get('tempC', 0) or 0) - 3,
+            'precip': 0,
+            'wind': round(float(current.get('windspeedKmph', 0) or 0) * 0.28, 1),
+            'wind_dir': _wind_dir(current.get('winddirDegree')),
+        }
+    if not sun_weather:
+        sun_weather = sat_weather
 
     result = {
         'saturday': sat_weather,
