@@ -1,3 +1,13 @@
+const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
+const WEEKDAYS = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота']
+
+function formatDate(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  if (isNaN(d)) return ''
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} (${WEEKDAYS[d.getDay()]})`
+}
+
 export default function WeatherPanel({ recommendations, loading, error, onClose, onSelectPlace }) {
   return (
     <div className="weather-overlay" onClick={onClose}>
@@ -63,7 +73,7 @@ export default function WeatherPanel({ recommendations, loading, error, onClose,
                         </div>
                       </div>
                       <div className="weather-best-day">
-                        Лучший день: <strong>{rec.best_day_label}</strong> · Оценка: {rec.score}/100
+                        Советуем поехать: <strong>{formatDate(rec.weather[rec.best_day]?.date)}</strong> · Оценка: {rec.score}/100
                       </div>
                     </div>
                   </div>
